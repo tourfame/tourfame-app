@@ -1,0 +1,1 @@
+ALTER TABLE `tours` ADD `isPublished` boolean DEFAULT false NOT NULL;

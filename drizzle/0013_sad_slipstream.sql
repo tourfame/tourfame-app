@@ -1,0 +1,2 @@
+ALTER TABLE `tours` ADD `scrapeJobId` int;--> statement-breakpoint
+ALTER TABLE `tours` ADD CONSTRAINT `tours_scrapeJobId_scrape_jobs_id_fk` FOREIGN KEY (`scrapeJobId`) REFERENCES `scrape_jobs`(`id`) ON DELETE cascade ON UPDATE no action;

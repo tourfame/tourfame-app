@@ -1,0 +1,358 @@
+import { useState, useEffect } from "react";
+import { useLocation, useRoute } from "wouter";
+import { trpc } from "@/lib/trpc";
+import TourCard from "@/components/TourCard";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { CalendarIcon, Search as SearchIcon, SlidersHorizontal } from "lucide-react";
+import { format } from "date-fns";
+import { zhCN } from "date-fns/locale";
+
+export default function Search() {
+  const [, params] = useRoute("/search");
+  const [, setLocation] = useLocation();
+  const searchParams = new URLSearchParams(window.location.search);
+
+  // 搜索和篩選狀態
+  const [keyword, setKeyword] = useState(searchParams.get("q") || "");
+  const [agencyId, setAgencyId] = useState(searchParams.get("agencyId") || "");
+
+  const [minPrice, setMinPrice] = useState(Number(searchParams.get("minPrice")) || 0);
+  const [maxPrice, setMaxPrice] = useState(Number(searchParams.get("maxPrice")) || 50000);
+  const [priceRange, setPriceRange] = useState([minPrice, maxPrice]);
+  const [daysRange, setDaysRange] = useState([
+    Number(searchParams.get("minDays")) || 1,
+    Number(searchParams.get("maxDays")) || 14
+  ]);
+  const [departureDate, setDepartureDate] = useState<Date | undefined>(
+    searchParams.get("departureDate") ? new Date(searchParams.get("departureDate")!) : undefined
+  );
+  const [sortBy, setSortBy] = useState(searchParams.get("sortBy") || "rating_desc");
+  const [showFilters, setShowFilters] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  // 查詢旅行團
+  const { data: tours, isLoading } = trpc.tours.search.useQuery({
+    keyword: keyword || undefined,
+    agencyId: (agencyId && agencyId !== "all") ? Number(agencyId) : undefined,
+    minPrice: priceRange[0],
+    maxPrice: priceRange[1],
+    minDays: daysRange[0],
+    maxDays: daysRange[1],
+    sortBy,
+    limit: 100,
+  });
+
+  // 查詢所有旅行社（用於篩選）
+  const { data: agencies } = trpc.tours.getAgencies.useQuery();
+  
+  // Sort agencies: "其他" last, 2-char names first, then by length
+  const sortedAgencies = agencies ? [...agencies].sort((a: any, b: any) => {
+    // "其他" always at the end
+    if (a.name === '其他') return 1;
+    if (b.name === '其他') return -1;
+    
+    const aLen = a.name.length;
+    const bLen = b.name.length;
+    
+    // 2-character names first
+    const aIsTwo = aLen === 2;
+    const bIsTwo = bLen === 2;
+    
+    if (aIsTwo && !bIsTwo) return -1;
+    if (!aIsTwo && bIsTwo) return 1;
+    
+    // If both are 2-char or both are not 2-char, sort by length
+    if (aLen !== bLen) return aLen - bLen;
+    
+    // Same length, sort alphabetically
+    return a.name.localeCompare(b.name, 'zh-HK');
+  }) : [];
+
+  // 處理搜索
+  const handleSearch = () => {
+    setCurrentPage(1); // 重置到第一頁
+    const params = new URLSearchParams();
+    if (keyword) params.set("q", keyword);
+    if (agencyId) params.set("agencyId", agencyId);
+
+    if (priceRange[0] > 0) params.set("minPrice", priceRange[0].toString());
+    if (priceRange[1] < 50000) params.set("maxPrice", priceRange[1].toString());
+    if (departureDate) params.set("departureDate", departureDate.toISOString());
+    if (sortBy) params.set("sortBy", sortBy);
+
+    setLocation(`/search?${params.toString()}`);
+    
+    // 滾動到篩選按鈕位置（置頂）
+    setShowFilters(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // 重置篩選
+  const handleReset = () => {
+    setKeyword("");
+    setAgencyId("");
+    setPriceRange([0, 50000]);
+    setDaysRange([1, 14]);
+    setDepartureDate(undefined);
+    setSortBy("rating_desc");
+    setLocation("/search");
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* 搜索欄 */}
+      <div className="bg-white border-b sticky top-0 z-10">
+        <div className="container py-4">
+          <div className="flex gap-2">
+            <div className="flex-1 relative">
+              <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                type="text"
+                placeholder="搜索旅行團、目的地..."
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                className="pl-10"
+              />
+            </div>
+            <Button onClick={handleSearch}>
+              <SearchIcon className="h-4 w-4 mr-2" />
+              搜索
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <SlidersHorizontal className="h-4 w-4 mr-2" />
+              篩選
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="container py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* 左側篩選欄 */}
+          <div className={`lg:block ${showFilters ? "block" : "hidden"}`}>
+            <div className="bg-white rounded-lg p-6 space-y-6 sticky top-24">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold">篩選條件</h2>
+                <Button variant="ghost" size="sm" onClick={handleReset}>
+                  重置
+                </Button>
+              </div>
+
+              {/* 旅行社 */}
+              <div className="space-y-2">
+                <Label>旅行社</Label>
+                <Select value={agencyId} onValueChange={setAgencyId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="選擇旅行社" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">全部</SelectItem>
+                    {sortedAgencies.map((agency: any) => (
+                      <SelectItem key={agency.id} value={agency.id.toString()}>
+                        {agency.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+
+
+              {/* 價格範圍 */}
+              <div className="space-y-4">
+                <Label>價格範圍</Label>
+                <div className="px-2">
+                  <Slider
+                    value={priceRange}
+                    onValueChange={setPriceRange}
+                    min={0}
+                    max={50000}
+                    step={1000}
+                    className="w-full"
+                  />
+                </div>
+                <div className="flex items-center justify-between text-sm text-gray-600">
+                  <span>HK${priceRange[0].toLocaleString()}</span>
+                  <span>HK${priceRange[1].toLocaleString()}</span>
+                </div>
+              </div>
+
+              {/* 天數範圍 */}
+              <div className="space-y-4">
+                <Label>天數: {daysRange[0]} - {daysRange[1]} 天</Label>
+                <div className="px-2">
+                  <Slider
+                    value={daysRange}
+                    onValueChange={setDaysRange}
+                    min={1}
+                    max={14}
+                    step={1}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+
+              {/* 出發日期 */}
+              <div className="space-y-2">
+                <Label>出發日期</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start text-left font-normal"
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {departureDate ? (
+                        format(departureDate, "PPP", { locale: zhCN })
+                      ) : (
+                        <span>選擇日期</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={departureDate}
+                      onSelect={setDepartureDate}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <Button onClick={handleSearch} className="w-full">
+                套用篩選
+              </Button>
+            </div>
+          </div>
+
+          {/* 右側結果列表 */}
+          <div className="lg:col-span-3 space-y-4">
+            {/* 排序和結果數量 */}
+            <div className="flex items-center justify-between bg-white rounded-lg p-4">
+              <div className="text-sm text-gray-600">
+                找到 {tours?.total || 0} 個旅行團
+              </div>
+              <div className="flex items-center gap-2">
+                <Label className="text-sm">排序：</Label>
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="price_asc">價格由低到高</SelectItem>
+                    <SelectItem value="price_desc">價格由高到低</SelectItem>
+                    <SelectItem value="rating_desc">評分由高到低</SelectItem>
+                    <SelectItem value="departure_asc">出發日期由近到遠</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* 搜尋結果總數和排序說明 */}
+            {tours && tours.tours && tours.tours.length > 0 && (
+              <div className="mb-4 flex items-center justify-between text-sm text-gray-600">
+                <p>
+                  找到 <span className="font-semibold text-gray-900">{tours.total}</span> 個旅行團
+                  {sortBy === "rating_desc" && <span className="ml-2">(按評分排序)</span>}
+                </p>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleReset}
+                  className="text-gray-600 hover:text-gray-900"
+                >
+                  清除篩選
+                </Button>
+              </div>
+            )}
+
+            {/* 旅行團列表 */}
+            {isLoading ? (
+              <div className="text-center py-12">
+                <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent"></div>
+                <p className="mt-4 text-gray-600">搜索中...</p>
+              </div>
+            ) : tours && tours.tours && tours.tours.length > 0 ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {tours.tours
+                    .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                    .map((tour: any) => (
+                      <TourCard key={tour.id} tour={tour} />
+                    ))}
+                </div>
+                
+                {/* 分頁控制 */}
+                {tours.tours.length > itemsPerPage && (
+                  <div className="mt-8 flex items-center justify-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      上一頁
+                    </Button>
+                    <div className="flex items-center gap-1">
+                      {Array.from(
+                        { length: Math.ceil(tours.tours.length / itemsPerPage) },
+                        (_, i) => i + 1
+                      ).map(page => (
+                        <Button
+                          key={page}
+                          variant={currentPage === page ? "default" : "ghost"}
+                          size="sm"
+                          onClick={() => setCurrentPage(page)}
+                          className="w-8 h-8 p-0"
+                        >
+                          {page}
+                        </Button>
+                      ))}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.min(Math.ceil(tours.tours.length / itemsPerPage), p + 1))}
+                      disabled={currentPage === Math.ceil(tours.tours.length / itemsPerPage)}
+                    >
+                      下一頁
+                    </Button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="bg-white rounded-lg p-12 text-center">
+                <p className="text-gray-600 mb-4">沒有找到符合條件的旅行團</p>
+                <Button variant="outline" onClick={handleReset}>
+                  重置篩選條件
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

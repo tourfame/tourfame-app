@@ -1,0 +1,1 @@
+ALTER TABLE `advertisements` MODIFY COLUMN `placement` enum('home_top','recommendations_top','favorites_top','search_top') NOT NULL;

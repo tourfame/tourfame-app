@@ -1,0 +1,1 @@
+ALTER TABLE `notifications` MODIFY COLUMN `type` enum('review_reply','review_question','contact') NOT NULL;

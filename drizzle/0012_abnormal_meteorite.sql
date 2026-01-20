@@ -1,0 +1,1 @@
+ALTER TABLE `tour_comments` ADD `isAnonymous` boolean DEFAULT false NOT NULL;

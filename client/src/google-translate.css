@@ -1,0 +1,93 @@
+/* Hide Google Translate toolbar */
+.goog-te-banner-frame {
+  display: none !important;
+}
+
+/* Hide the top translation bar */
+.goog-te-banner-frame.skiptranslate {
+  display: none !important;
+}
+
+/* Hide all Google Translate iframes by class name */
+iframe.VIpgJd-ZVi9od-ORHb-OEVmcd,
+iframe.VIpgJd-ZVi9od-xl07Ob-OEVmcd,
+iframe.skiptranslate {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  width: 0 !important;
+  position: absolute !important;
+  top: -9999px !important;
+}
+
+/* Hide the balloon tooltip */
+#goog-gt-tt,
+.goog-te-balloon-frame {
+  display: none !important;
+}
+
+/* Adjust body positioning */
+body {
+  top: 0 !important;
+  position: static !important;
+}
+
+body.translated-ltr,
+body.translated-rtl {
+  top: 0 !important;
+  margin-top: 0 !important;
+}
+
+/* Hide Google Translate element container */
+#google_translate_element {
+  display: none !important;
+}
+
+/* Hide the language selector dropdown (we use custom buttons) */
+.goog-te-combo {
+  display: none !important;
+}
+
+/* Hide the "Powered by Google Translate" text */
+.goog-te-gadget {
+  display: none !important;
+}
+
+/* Hide any remaining Google Translate UI elements */
+.goog-te-menu-value,
+.goog-te-menu-frame,
+.goog-te-menu2 {
+  display: none !important;
+}
+
+/* Hide all iframes with Google Translate related attributes */
+iframe[id*=":"],
+iframe[id*="google_translate"] {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* Hide the top translation bar (more specific selectors) */
+.goog-te-banner-frame.skiptranslate,
+.goog-te-banner-frame,
+body > .skiptranslate,
+top-frame.skiptranslate {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  width: 0 !important;
+  position: absolute !important;
+  top: -9999px !important;
+  left: -9999px !important;
+}
+
+/* Force hide all Google Translate UI elements */
+[class*="goog-te"],
+[id*="goog-te"],
+[class*="VIpgJd"],
+[id*="google_translate"] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}

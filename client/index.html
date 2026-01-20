@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1" />
+    <link rel="icon" type="image/png" href="/logo-favicon.png" />
+    <link rel="apple-touch-icon" href="/logo-favicon.png" />
+    <title>TourFame.com - 香港旅行團口碑及價格比較平台</title>    
+    <!-- THIS IS THE START OF A COMMENT BLOCK, BLOCK TO BE DELETED: Google Fonts here, example:
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    THIS IS THE END OF A COMMENT BLOCK, BLOCK TO BE DELETED -->
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <div id="google_translate_element"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    <script type="text/javascript">
+      // 在管理員頁面清除 Google Translate 狀態（最早期執行）
+      if (window.location.pathname.startsWith('/admin')) {
+        // 立即刪除 Google Translate cookies
+        document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+        document.cookie = 'googtrans=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; domain=' + window.location.hostname;
+        
+        // 重置頁面語言
+        document.documentElement.lang = 'zh-TW';
+        document.documentElement.removeAttribute('translate');
+        document.body.classList.add('notranslate');
+        
+        // 移除 Google Translate 元素（如果存在）
+        var removeGoogleTranslateElements = function() {
+          var banner = document.querySelector('.goog-te-banner-frame');
+          if (banner) banner.remove();
+          
+          var container = document.getElementById('google_translate_element');
+          if (container) container.remove();
+          
+          // 移除所有 Google Translate 添加的 font 標籤
+          var fonts = document.querySelectorAll('font');
+          fonts.forEach(function(font) {
+            var parent = font.parentNode;
+            if (parent) {
+              while (font.firstChild) {
+                parent.insertBefore(font.firstChild, font);
+              }
+              parent.removeChild(font);
+            }
+          });
+        };
+        
+        // 立即執行一次
+        removeGoogleTranslateElements();
+        
+        // 在 DOM 載入後再執行一次
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', removeGoogleTranslateElements);
+        } else {
+          removeGoogleTranslateElements();
+        }
+        
+        // 延遲再次清除（確保完全移除）
+        setTimeout(removeGoogleTranslateElements, 100);
+        setTimeout(removeGoogleTranslateElements, 500);
+      }
+      
+      // 只在非管理員頁面載入 Google Translate
+      if (!window.location.pathname.startsWith('/admin')) {
+        function googleTranslateElementInit() {
+          new google.translate.TranslateElement(
+            {
+              pageLanguage: 'zh-TW',
+              includedLanguages: 'zh-TW,zh-CN,en',
+              layout: google.translate.TranslateElement.InlineLayout.HORIZONTAL
+            },
+            'google_translate_element'
+          );
+        }
+        
+        // 動態載入 Google Translate 腳本
+        var script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
+        document.body.appendChild(script);
+      }
+    </script>
+    <script
+      defer
+      src="%VITE_ANALYTICS_ENDPOINT%/umami"
+      data-website-id="%VITE_ANALYTICS_WEBSITE_ID%"></script>
+  </body>
+
+</html>
